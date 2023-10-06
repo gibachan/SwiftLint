@@ -63,6 +63,12 @@ private final class Visitor: ViolationsSyntaxVisitor {
             self.violations.append(node.positionAfterSkippingLeadingTrivia)
         }
     }
+
+    override func visitPost(_ node: InitializerDeclSyntax) {
+        if isUnneededOverride(node) {
+            self.violations.append(node.positionAfterSkippingLeadingTrivia)
+        }
+    }
 }
 
 private final class Rewriter: SyntaxRewriter, ViolationsSyntaxRewriter {
@@ -121,6 +127,24 @@ private func isUnneededOverride(_ node: FunctionDeclSyntax) -> Bool {
 
     for (lhs, rhs) in zip(expectedArguments, actualArguments) where lhs != rhs {
         return false
+    }
+
+    return true
+}
+
+private func isUnneededOverride(_ node: InitializerDeclSyntax) -> Bool {
+    guard node.modifiers.containsOverride, let statement = node.body?.statements.onlyElement else {
+        return false
+    }
+
+    // Assume having @available changes behavior
+    if node.attributes.contains(attributeNamed: "available") {
+        return false
+    }
+
+    // Assume any change in arguments passed means behavior was changed
+    let expectedArguments = node.signature.parameterClause.parameters.map {
+        ($0.firstName.text == "_" ? "" : $0.firstName.text, $0.secondName?.text ?? $0.firstName.text)
     }
 
     return true

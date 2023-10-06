@@ -159,6 +159,11 @@ struct UnneededOverrideRuleExamples {
                 super.bar(animated: animated, completion: completion)
             }
         }
+        """),
+        Example("""
+        override init() {
+            super.init()
+        }
         """)
     ]
 
